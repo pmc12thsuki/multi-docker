@@ -1,0 +1,32 @@
+sudo: required
+services: 
+  - docker
+
+# we only test for react side here, other component can test too by adding those command
+before_install:
+  - docker build -t pmc12thsuki/react-test -f ./client/Dockerfile.dev ./client
+  # use -f to specify a devolop dockerfile
+
+  # if want to add other test, for example 
+  # - docker build myOtherProject
+
+script:
+  - docker run pmc12thsuki/react-test npm test -- --coverage
+  #  -- --coverage make test exit after the test is finished, otherwise trivas ci will see this test failed
+  # - docker run myOtherProject runMyTests
+  
+after_success:
+  # build a production image
+  - docker build -t pmc12thsuki/multi-client ./client
+  - docker build -t pmc12thsuki/multi-nginx ./nginx
+  - docker build -t pmc12thsuki/multi-server ./server
+  - docker build -t pmc12thsuki/multi-worker ./worker
+
+  # Login to the docker CLI in one single command
+  # Add docker id and password on Travis ci 's environment variable
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # push production image to Docker Hub
+  - docker push pmc12thsuki/multi-client
+  - docker push pmc12thsuki/multi-nginx
+  - docker push pmc12thsuki/multi-server
+  - docker push pmc12thsuki/multi-worker
