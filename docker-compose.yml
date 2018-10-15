@@ -1,0 +1,58 @@
+version: '3'
+services: 
+
+  postgres:
+    image: 'postgres:latest'
+
+  redis: 
+    image: 'redis:latest'
+  
+  nginx: 
+    restart: always
+    build: 
+      dockerfile: Dockerfile.dev
+      context: ./nginx
+    ports:
+      - '8000:80'
+  
+  # server api
+  api:
+    # how to build our image
+    build: 
+      # build with dockerfile.dev
+      dockerfile: Dockerfile.dev
+      # specify where is our dockerfile
+      context: ./server
+    volumes: 
+      # do not reference this file
+      - /app/node_modules
+      # reference all our code in /app to ./server
+      - ./server:/app
+    environment: 
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PGUSER=postgres
+      - PGHOST=postgres
+      - PGDATABASE=postgres
+      - PGPASSWORD=postgres_password
+      - PGPORT=5432
+
+  client: 
+    build:
+      dockerfile:  Dockerfile.dev
+      context: ./client
+    volumes: 
+      - /app/node_modules
+      - ./client:/app
+
+  worker:
+    build:
+      dockerfile:  Dockerfile.dev
+      context: ./worker
+    volumes: 
+      - /app/node_modules
+      - ./worker:/app
+    environment: 
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    
